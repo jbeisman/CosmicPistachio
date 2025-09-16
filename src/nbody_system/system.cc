@@ -15,6 +15,8 @@
 #include <immintrin.h>
 #endif
 
+constexpr float softening2 = 0.00001f;
+
 template <typename T>
 inline T inv_sqrt(const T x)
 {
@@ -142,7 +144,7 @@ void System::accumulate_forces() {
                     float dy = py[ii].data[jj] - p_y;
                     float dz = pz[ii].data[jj] - p_z;
                     float d2 = dx * dx + dy * dy + dz * dz;
-                          d2 += 0.0001;
+                          d2 += softening2;
                     float inv = inv_sqrt(d2);
                     float imp = ms[ii].data[jj] * inv * inv * inv;
                     r_x += dx * imp;
@@ -175,9 +177,6 @@ void System::accumulate_forces_AVX() {
 	std::for_each(std::execution::par_unseq, std::begin(this->Cidx),
 									std::end(this->Cidx), [=](int i) {
 
-		// Softening squared - TODO -- do something abut this
-    	constexpr float soft_sqrd = 0.0001f;
-
     	// Structured 256-bit loads (8 unique floats per __m256)
     	const __m256 p_xi = _mm256_load_ps(&px[i].data[0]);
     	const __m256 p_yi = _mm256_load_ps(&py[i].data[0]);
@@ -209,7 +208,7 @@ void System::accumulate_forces_AVX() {
     	                        _mm256_mul_ps(d_x, d_x), 
     	                        _mm256_mul_ps(d_y, d_y)), 
     	                        _mm256_mul_ps(d_z, d_z));
-    	        d_sqrd = _mm256_add_ps(d_sqrd, _mm256_set1_ps(soft_sqrd));
+    	        d_sqrd = _mm256_add_ps(d_sqrd, _mm256_set1_ps(softening2));
 
     	        // Calculate inv_d_cubed = 1 / d_sqrd^(3/2)
     	        __m256 inv_d = _mm256_rsqrt_ps(d_sqrd); //rsqrt_nr_256(d_sqrd) or rsqrt_nr2_256(d_sqrd);
