@@ -14,6 +14,7 @@ set(DEVICE_CXX_FLAGS "")
 if (ENABLE_CUDA)
   	enable_language(CUDA)
   	set(CMAKE_CXX_COMPILER "nvc++")
+  	set(CMAKE_C_COMPILER "nvc")
   	string(APPEND DEVICE_CXX_FLAGS " -stdpar=gpu -fast")
 else()
 	check_cxx_compiler_flag(" -mavx2" CXX_SUPPORTS_AVX2)
@@ -34,18 +35,25 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 
-add_executable(nbody main.cc src/nbody_system/initial_condition.cc src/nbody_system/system.cc)
-
-target_include_directories(nbody PRIVATE src/nbody_system)
-
-if (ENABLE_CUDA)
-  add_compile_definitions (ENABLE_CUDA)
-  target_compile_options(nbody PRIVATE -stdpar)
-  target_link_options(nbody PRIVATE -stdpar)
-else()
-  find_package(TBB REQUIRED)
-  target_link_libraries(nbody PRIVATE TBB::tbb)
-endif()
+# Set RPATH
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif("${isSystemDir}" STREQUAL "-1")
 
 
-install(TARGETS nbody)
+find_package(GLEW REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm REQUIRED)
+find_package(TBB REQUIRED)
+
+
+
+
+add_subdirectory(third_party/imgui)
+add_subdirectory(src/nbody_system)
+
+add_subdirectory(src/app)

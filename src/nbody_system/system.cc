@@ -23,7 +23,7 @@ inline T inv_sqrt(const T x)
 #ifdef ENABLE_CUDA
   return rsqrtf(x);
 #else
-  __m128 y = _mm_set_ss(x); y = _mm_rsqrt_ss(y); return _mm_cvtss_f32(y);
+  return 1.0f/std::sqrt(x);
 #endif
 }
 
@@ -126,7 +126,7 @@ void System::accumulate_forces() {
 	auto *ay = this->AccY.data();
 	auto *az = this->AccZ.data();
 
-	std::size_t NBODS = this->num_bodies;
+	std::size_t CHUNKS = this->num_bodies / CHUNK;
 	std::for_each(std::execution::par_unseq, std::begin(this->Cidx),
 									std::end(this->Cidx), [=](int i) {
 
@@ -138,7 +138,7 @@ void System::accumulate_forces() {
             float r_y = 0.0f;
             float r_z = 0.0f;
 
-            for (std::size_t ii = 0; ii < NBODS/CHUNK; ii++) {
+            for (std::size_t ii = 0; ii < CHUNKS; ii++) {
                 for (std::size_t jj = 0; jj < CHUNK; jj++) {
                     float dx = px[ii].data[jj] - p_x;
                     float dy = py[ii].data[jj] - p_y;
@@ -173,7 +173,7 @@ void System::accumulate_forces_AVX() {
 	auto *ay = this->AccY.data();
 	auto *az = this->AccZ.data();
 
-	std::size_t NBODS = this->num_bodies;
+	std::size_t CHUNKS = this->num_bodies / CHUNK;
 	std::for_each(std::execution::par_unseq, std::begin(this->Cidx),
 									std::end(this->Cidx), [=](int i) {
 
@@ -188,7 +188,7 @@ void System::accumulate_forces_AVX() {
     	__m256 result_z = _mm256_setzero_ps();
 
     	// Loop through array of 256-bit vectors
-    	for (std::size_t j = 0; j < NBODS/CHUNK; j++) {
+    	for (std::size_t j = 0; j < CHUNKS; j++) {
     	    for (std::size_t k = 0; k < CHUNK; k++) {
 
     	        // Set all 8 floats in 256-bit vector to the same value
@@ -197,7 +197,7 @@ void System::accumulate_forces_AVX() {
     	        const __m256 p_zj = _mm256_set1_ps(pz[j].data[k]);
     	        const __m256 mass = _mm256_set1_ps(ms[j].data[k]);
 
-    	        // Distance between positions (p_x contains 8 unique floats and p_xx contains 8 copies of the same value)
+    	        // Distance between positions (p_xi contains 8 unique floats and p_xj contains 8 copies of the same value)
     	        __m256 d_x = _mm256_sub_ps(p_xj, p_xi);
     	        __m256 d_y = _mm256_sub_ps(p_yj, p_yi);
     	        __m256 d_z = _mm256_sub_ps(p_zj, p_zi);
