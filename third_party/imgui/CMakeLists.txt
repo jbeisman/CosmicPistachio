@@ -19,14 +19,11 @@ set(IMGUI_PUBLIC_HH_FILES
 	imgui_impl_opengl3.h
 )
 
-
 add_library(imgui SHARED)
+
 target_sources(imgui PRIVATE ${IMGUI_CC_FILES})
 target_sources(imgui PUBLIC FILE_SET HEADERS FILES ${IMGUI_PUBLIC_HH_FILES})
 
-target_include_directories(imgui PRIVATE glfw ${OpenGL_INCLUDE_DIRS})
-target_link_libraries(imgui PUBLIC ${OpenGL_LIBRARIES} ${glfw3_LIBRARIES})
+target_link_libraries(imgui PUBLIC GLEW OpenGL glfw)
 
 install(TARGETS imgui FILE_SET HEADERS)
-
-

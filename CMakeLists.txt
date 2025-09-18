@@ -14,7 +14,6 @@ set(DEVICE_CXX_FLAGS "")
 if (ENABLE_CUDA)
   	enable_language(CUDA)
   	set(CMAKE_CXX_COMPILER "nvc++")
-  	set(CMAKE_C_COMPILER "nvc")
   	string(APPEND DEVICE_CXX_FLAGS " -stdpar=gpu -fast")
 else()
 	check_cxx_compiler_flag(" -mavx2" CXX_SUPPORTS_AVX2)
@@ -28,12 +27,10 @@ else()
   	string(APPEND DEVICE_CXX_FLAGS " -Ofast -march=native")
 endif()
 
-
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
   message(STATUS "Adding device specific compiler flags to CMAKE_CXX_FLAGS: '${DEVICE_CXX_FLAGS}'")
   string(APPEND CMAKE_CXX_FLAGS ${DEVICE_CXX_FLAGS})
 endif()
-
 
 # Set RPATH
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -43,15 +40,11 @@ if("${isSystemDir}" STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif("${isSystemDir}" STREQUAL "-1")
 
-
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm REQUIRED)
 find_package(TBB REQUIRED)
-
-
-
 
 add_subdirectory(third_party/imgui)
 add_subdirectory(src/nbody_system)
