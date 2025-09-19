@@ -21,7 +21,7 @@ public:
 	std::vector<SIMDVec> AccY;
 	std::vector<SIMDVec> AccZ;
 	std::vector<SIMDVec> Mass; // Mass data
-	std::vector<int> Cidx;     // Chunk index
+	std::vector<std::size_t> Cidx; // Chunk index
 	int num_bodies{0};
 	float elapsed_time{0.0};
 private:

@@ -47,7 +47,7 @@ bool System::setup(int nbodies) {
 	
 	this->Mass = std::vector<SIMDVec>(this->num_bodies/CHUNK);
 
-	this->Cidx  = std::vector<int>(this->num_bodies/CHUNK);
+	this->Cidx  = std::vector<std::size_t>(this->num_bodies/CHUNK);
 	std::iota(std::begin(this->Cidx), std::end(this->Cidx), 0);
 
     rotating_4(*this);
@@ -85,7 +85,7 @@ void System::update_velocities(float timestep) {
 	auto const *az = this->AccZ.data();
 
   	std::for_each(std::execution::par_unseq, std::begin(this->Cidx),
-  										std::end(this->Cidx), [=](int i) {
+										std::end(this->Cidx), [=](std::size_t i) {
   		for (std::size_t j = 0; j < CHUNK; j++) {
 			vx[i].data[j] += ax[i].data[j] * dt;
 			vy[i].data[j] += ay[i].data[j] * dt;
@@ -106,7 +106,7 @@ void System::update_positions(float timestep) {
 	auto const *vz = this->VelZ.data();
 
   	std::for_each(std::execution::par_unseq, std::begin(this->Cidx),
-  									std::end(this->Cidx), [=](int i) {
+									std::end(this->Cidx), [=](std::size_t i) {
   		for (std::size_t j = 0; j < CHUNK; j++) {
 			px[i].data[j] += vx[i].data[j] * dt;
 			py[i].data[j] += vy[i].data[j] * dt;
@@ -128,7 +128,7 @@ void System::accumulate_forces() {
 
 	std::size_t CHUNKS = this->num_bodies / CHUNK;
 	std::for_each(std::execution::par_unseq, std::begin(this->Cidx),
-									std::end(this->Cidx), [=](int i) {
+									std::end(this->Cidx), [=](std::size_t i) {
 
         for (std::size_t j = 0; j < CHUNK; j++) {
             const float p_x = px[i].data[j];
