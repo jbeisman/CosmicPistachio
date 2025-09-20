@@ -1,0 +1,104 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "rel-cpu",
+      "displayName": "Release build with shared memory CPU parallelism",
+      "description": "Configures the project.",
+      "binaryDir": "${sourceDir}/build/rel-cpu",
+      "installDir": "${sourceDir}/install/rel-cpu",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_INIT": "-ffast-math -march=native",
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "ENABLE_CUDA": "OFF"
+      }
+    },
+    {
+      "name": "rel-gpu",
+      "displayName": "Release build with unified memory GPU parallelism",
+      "description": "Configures the project.",
+      "binaryDir": "${sourceDir}/build/rel-gpu",
+      "installDir": "${sourceDir}/install/rel-gpu",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "nvc++",
+        "CMAKE_CXX_FLAGS_INIT": " -stdpar=gpu -fast",
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+        "ENABLE_CUDA": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "rel-cpu-build",
+      "displayName": "build Release-cpu",
+      "configurePreset": "rel-cpu"
+    },
+    {
+      "name": "rel-cpu-install",
+      "displayName": "install Release-cpu",
+      "configurePreset": "rel-cpu",
+      "targets": ["install"]
+    },
+
+    {
+      "name": "rel-gpu-build",
+      "displayName": "build Release-gpu",
+      "configurePreset": "rel-gpu"
+    },
+    {
+      "name": "rel-gpu-install",
+      "displayName": "install Release-gpu",
+      "configurePreset": "rel-gpu",
+      "targets": ["install"]
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "rel-cpu",
+      "displayName": "install Release-cpu",
+      "description": "Configures, builds, and installs Release-cpu.",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "rel-cpu"
+        },
+        {
+          "type": "build",
+          "name": "rel-cpu-build"
+        },
+        {
+          "type": "build",
+          "name": "rel-cpu-install"
+        }
+      ]
+    },
+    {
+      "name": "rel-gpu",
+      "displayName": "install Release-gpu",
+      "description": "Configures, builds, and installs Release-gpu.",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "rel-gpu"
+        },
+        {
+          "type": "build",
+          "name": "rel-gpu-build"
+        },
+        {
+          "type": "build",
+          "name": "rel-gpu-install"
+        }
+      ]
+    }
+  ]
+}

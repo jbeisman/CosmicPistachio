@@ -10,11 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(ENABLE_CUDA "Enable CUDA GPU execution" OFF)
 
-set(DEVICE_CXX_FLAGS "")
 if (ENABLE_CUDA)
   	enable_language(CUDA)
-  	set(CMAKE_CXX_COMPILER "nvc++")
-  	string(APPEND DEVICE_CXX_FLAGS " -stdpar=gpu -fast")
 else()
 	check_cxx_compiler_flag(" -mavx2" CXX_SUPPORTS_AVX2)
 	if(CXX_SUPPORTS_AVX2)
@@ -24,12 +21,6 @@ else()
 	else()
 	    message(STATUS "Compiler does NOT support AVX2 via -mavx2")
 	endif()
-  	string(APPEND DEVICE_CXX_FLAGS " -Ofast -march=native")
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  message(STATUS "Adding device specific compiler flags to CMAKE_CXX_FLAGS: '${DEVICE_CXX_FLAGS}'")
-  string(APPEND CMAKE_CXX_FLAGS ${DEVICE_CXX_FLAGS})
 endif()
 
 # Set RPATH
