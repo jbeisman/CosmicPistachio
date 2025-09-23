@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
 
-add_executable(nbody app.cc)
+add_executable(nbody app.cc camera.cc)
 
 target_link_libraries(nbody PRIVATE GLEW OpenGL glfw imgui system)
 

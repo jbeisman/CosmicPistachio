@@ -47,6 +47,9 @@ bool System::setup(int nbodies) {
 	
 	this->Mass = std::vector<SIMDVec>(this->num_bodies/CHUNK);
 
+	this->flatPos = std::vector<float>(3 * this->num_bodies);
+	this->flatVel = std::vector<float>(3 * this->num_bodies);
+
 	this->Cidx  = std::vector<std::size_t>(this->num_bodies/CHUNK);
 	std::iota(std::begin(this->Cidx), std::end(this->Cidx), 0);
 
@@ -245,3 +248,32 @@ void System::write_points(int filenum) {
   	}
 }
 
+void System::interleave_data() {
+	auto const *px = this->PosX.data();
+	auto const *py = this->PosY.data();
+	auto const *pz = this->PosZ.data();
+
+	auto const *vx = this->VelX.data();
+	auto const *vy = this->VelY.data();
+	auto const *vz = this->VelZ.data();
+
+	auto *fp = this->flatPos.data();
+	auto *fv = this->flatVel.data();
+
+	std::size_t CHUNKS = this->num_bodies / CHUNK;
+	std::for_each(std::execution::par_unseq, std::begin(this->Cidx),
+									std::end(this->Cidx), [=](int i) {
+
+		for (std::size_t j = 0; j < CHUNK; j++) {
+			std::size_t idx = i * CHUNK + j;
+			
+			fp[3*idx + 0] = px[i].data[j];
+			fp[3*idx + 1] = py[i].data[j];
+			fp[3*idx + 2] = pz[i].data[j];
+
+			fv[3*idx + 0] = vx[i].data[j];
+			fv[3*idx + 1] = vy[i].data[j];
+			fv[3*idx + 2] = vz[i].data[j];
+		}
+	});
+}

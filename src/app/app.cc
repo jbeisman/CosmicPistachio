@@ -7,6 +7,8 @@
 // - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
 // - Introduction, links and more at the top of imgui.cpp
 
+#include <GL/glew.h>
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -30,7 +32,14 @@
 #endif
 
 #include "system.hh"
+#include "camera.hh"
 #include <memory>
+#include <iostream>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -81,6 +90,8 @@ int main(int, char**)
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
+    glewInit();
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -104,30 +115,119 @@ int main(int, char**)
 #endif
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details. If you like the default font but want it to scale better, consider using the 'ProggyVector' from the same author!
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    //style.FontSizeBase = 20.0f;
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf");
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
-    //IM_ASSERT(font != nullptr);
-
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    
+    int NBODS = 65536;
     auto system = std::make_unique<System>();
-    system->setup(65536);
+    system->setup(NBODS);
+    system->interleave_data();
+
+    auto camera = std::make_unique<Camera>(
+      glm::vec3(0.0f, 0.0f, -2000000.0f),
+      glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+// fixed camera
+glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, -2000000.0f);
+glm::vec3 targetPosition = glm::vec3(0.0f, 0.0f, 0.0f); // Camera looks at the origin
+glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);     // Y-axis is up
+glm::mat4 viewMatrix = glm::lookAt(cameraPosition, targetPosition, upVector);
+glm::mat4 projMatrix = glm::perspective(glm::radians(60.0f), 1280.f/800.f, 1.0f, 5000000.0f);
+
+    GLuint VAO, VBO, UBO;
+const char* vertexShaderSource = R"(
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout(std140) uniform UBO {
+    mat4 view;
+    mat4 projection;
+};
+void main()
+{
+    gl_Position = projection * view * vec4(aPos, 1.0);
+}
+)";
+const char* fragmentShaderSource = R"(
+#version 330 core
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+}
+)";
+  GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vshader, 1, &vertexShaderSource, NULL);
+  glCompileShader(vshader);
+  GLint success;
+  glGetShaderiv(vshader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    char info[512];
+    glGetShaderInfoLog(vshader, 512, nullptr, info);
+    std::cerr << "Shader compile error: " << info << std::endl;
+  }
+
+  GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fshader, 1, &fragmentShaderSource, NULL);
+  glCompileShader(fshader);
+  glGetShaderiv(fshader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    char info[512];
+    glGetShaderInfoLog(fshader, 512, nullptr, info);
+    std::cerr << "Shader compile error: " << info << std::endl;
+  }
+
+  GLuint program = glCreateProgram();
+  glAttachShader(program, vshader);
+  glAttachShader(program, fshader);
+  glLinkProgram(program);
+
+
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+  if (!success) {
+    char info[512];
+    glGetProgramInfoLog(program, 512, nullptr, info);
+    std::cerr << "Shader link error: " << info << std::endl;
+  }
+
+  glDeleteShader(vshader);
+  glDeleteShader(fshader);
+
+glUseProgram(program);
+
+//unsigned int viewLoc = glGetUniformLocation(program, "view");
+//glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+//
+//unsigned int projLoc = glGetUniformLocation(program, "projection");
+//glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projMatrix));
+
+
+      // Generate buffers
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &UBO);
+
+  // Bind vertex array
+  glBindVertexArray(VAO);
+  glEnableVertexAttribArray(0);
+
+  // Bind vertex buffer and setup data
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * NBODS * 3, system->flatPos.data(),
+               GL_DYNAMIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
+                        (void *)0);
+
+  // Setup uniform buffer
+  glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+  glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), nullptr,
+               GL_DYNAMIC_DRAW); // Allocate space only
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+  // Bind UBO to binding point 0
+  glBindBufferBase(GL_UNIFORM_BUFFER, 0, UBO);
 
     // Main loop
 #ifdef __EMSCRIPTEN__
@@ -150,7 +250,7 @@ int main(int, char**)
             ImGui_ImplGlfw_Sleep(10);
             continue;
         }
-
+        
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -199,11 +299,65 @@ int main(int, char**)
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glEnable(GL_PROGRAM_POINT_SIZE);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+
+  float aspect_ratio = (float)display_w / (float)display_h;
+
+        
+
+
+
+
+
+
 
         system->advance(10.0f);
+        system->interleave_data();
+        // Bind new position data to VBO
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        auto *vertices = system->flatPos.data();
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * NBODS * 3,
+                    vertices);
 
+
+          // Update UBO data
+  glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4),
+                  glm::value_ptr(camera->get_view_matrix()));
+  glBufferSubData(
+      GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4),
+      glm::value_ptr(camera->get_projection_matrix(aspect_ratio)));
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
+
+        // Bind VAO and draw
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_POINTS, 0, NBODS);
+        glBindVertexArray(0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
     }
 #ifdef __EMSCRIPTEN__

@@ -22,6 +22,9 @@ public:
 	std::vector<SIMDVec> AccZ;
 	std::vector<SIMDVec> Mass; // Mass data
 	std::vector<std::size_t> Cidx; // Chunk index
+	void interleave_data();
+	std::vector<float> flatPos;
+	std::vector<float> flatVel;
 	int num_bodies{0};
 	float elapsed_time{0.0};
 private:
