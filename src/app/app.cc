@@ -46,6 +46,10 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
+static bool is_dragging = false;
+
+
+
 // Main code
 int main(int, char**)
 {
@@ -249,6 +253,26 @@ glUseProgram(program);
         {
             ImGui_ImplGlfw_Sleep(10);
             continue;
+        }
+
+
+
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            if (!is_dragging) {
+                // First frame of the drag
+                is_dragging = true;
+                double current_x, current_y;
+                glfwGetCursorPos(window, &current_x, &current_y);
+                camera->start_drag(glm::vec2(current_x, current_y));
+            } else {
+                // Continuation of the drag
+                double current_x, current_y;
+                glfwGetCursorPos(window, &current_x, &current_y);
+                camera->update_drag( glm::vec2(current_x, current_y), glm::vec2(io.DisplaySize.x, io.DisplaySize.y));
+            }
+        } else {
+            is_dragging = false;
+            camera->end_drag();
         }
         
         // Start the Dear ImGui frame
