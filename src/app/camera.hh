@@ -10,7 +10,7 @@ public:
   void start_drag(const glm::vec2 &mouse_pos);
   void end_drag();
   void update_drag(const glm::vec2 &mouse_pos, const glm::vec2 &view_size);
-//  void update_zoom(float scroll_offset); // until SDL_get_ticks is replaced
+  void update_zoom(float scroll_offset);
   glm::mat4x4 get_view_matrix() const;
   glm::mat4x4 get_projection_matrix(float aspect_ratio) const;
   glm::mat4x4 get_model_matrix() const;

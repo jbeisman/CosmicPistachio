@@ -33,11 +33,19 @@ endif("${isSystemDir}" STREQUAL "-1")
 
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
 find_package(glm REQUIRED)
 find_package(TBB REQUIRED)
 
+add_subdirectory(third_party/SDL)
+install(TARGETS SDL3-shared)
+
 add_subdirectory(third_party/imgui)
 add_subdirectory(src/nbody_system)
-
 add_subdirectory(src/app)
+
+
+# Install shaders into the run directory
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/app/shaders/"
+        DESTINATION "bin/shaders"
+        FILES_MATCHING PATTERN "*.glsl"
+)

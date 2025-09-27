@@ -1,5 +1,6 @@
 
 #include "camera.hh"
+#include <SDL3/SDL.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }
@@ -54,38 +55,38 @@ void Camera::update_drag(const glm::vec2 &mouse_pos,
   prev_mouse_pos.y = mouse_pos.y;
 }
 
-//void Camera::update_zoom(float scroll_offset) {
-//
-//    double current_time = SDL_GetTicks();
-//    double time_delta = current_time - last_zoom_time;
-//
-//    if (time_delta > zoom_reset_threshold) {
-//        zoom_acceleration = 1.0f;
-//    }
-//    else {
-//        zoom_acceleration += zoom_acceleration_rate;
-//    }
-//
-//    zoom_acceleration = std::min(zoom_acceleration, max_zoom_acceleration);
-//
-//    glm::vec3 view_dir = get_view_direction();
-//    glm::vec3 current_pos = get_cam_pos();
-//    glm::vec3 look_at_pos = get_LookAt();
-//    float distance = glm::distance(current_pos, look_at_pos);
-//
-//    float zoom_amount = scroll_offset * zoom_sensitivity * zoom_acceleration;
-//    float new_distance = distance - zoom_amount;
-//
-//    const float min_zoom_distance = 3.0f;
-//    if (new_distance < min_zoom_distance) {
-//        new_distance = min_zoom_distance;
-//    }
-//
-//    glm::vec3 new_position = look_at_pos - view_dir * new_distance;
-//    set_camera_view(new_position);
-//
-//    last_zoom_time = current_time;
-//}
+void Camera::update_zoom(float scroll_offset) {
+
+    double current_time = SDL_GetTicks();
+    double time_delta = current_time - last_zoom_time;
+
+    if (time_delta > zoom_reset_threshold) {
+        zoom_acceleration = 1.0f;
+    }
+    else {
+        zoom_acceleration += zoom_acceleration_rate;
+    }
+
+    zoom_acceleration = std::min(zoom_acceleration, max_zoom_acceleration);
+
+    glm::vec3 view_dir = get_view_direction();
+    glm::vec3 current_pos = get_cam_pos();
+    glm::vec3 look_at_pos = get_LookAt();
+    float distance = glm::distance(current_pos, look_at_pos);
+
+    float zoom_amount = scroll_offset * zoom_sensitivity * zoom_acceleration;
+    float new_distance = distance - zoom_amount;
+
+    const float min_zoom_distance = 3.0f;
+    if (new_distance < min_zoom_distance) {
+        new_distance = min_zoom_distance;
+    }
+
+    glm::vec3 new_position = look_at_pos - view_dir * new_distance;
+    set_camera_view(new_position);
+
+    last_zoom_time = current_time;
+}
 
 void Camera::set_camera_view(glm::vec3 eye) {
   cam_pos = std::move(eye);
